@@ -1,4 +1,6 @@
 object IndependentSet {
+  var recursiveCalls = 0
+
   def printMatrix(matrix: List[List[Int]]): Unit = {
     matrix.foreach(row => println(row.mkString(" | ")))
   }
@@ -11,9 +13,7 @@ object IndependentSet {
       } ::: List(
         List.fill(matrix.length + 1)(0)
           .zipWithIndex
-          .map { case (value, index) =>
-          if (neighbours.contains(index)) 1 else 0
-        }
+          .map { case (_, index) => if (neighbours.contains(index)) 1 else 0 }
       )
   }
 
@@ -41,6 +41,8 @@ object IndependentSet {
   }
 
   def independentSet(matrix: List[List[Int]]): Int = {
+    recursiveCalls += 1
+
     if (matrix.isEmpty) 0
     else {
       val indexedMatrix = matrix.zipWithIndex
@@ -58,18 +60,29 @@ object IndependentSet {
             1 + independentSet(dropVertexWithNeighbour(matrix, vertexNumber))
           } else {
             val newVertexNeighbours =
-              (matrix(neighbours(0))
-                .zipWithIndex
-                .filter {case (value, index) => value == 1 && index != vertexNumber && !neighbours.contains(index) }
-                .unzip
-                ._2 ::: matrix(neighbours(1))
-                .zipWithIndex
-                .filter { case (value, index) => value == 1 && index != vertexNumber && !neighbours.contains(index) }
-                .unzip
-                ._2
+              (   matrix(neighbours(0))
+                    .zipWithIndex
+                    .filter {case (value, index) => value == 1 && index != vertexNumber && !neighbours.contains(index) }
+                    .unzip
+                    ._2
+                :::
+                  matrix(neighbours(1))
+                    .zipWithIndex
+                    .filter { case (value, index) => value == 1 && index != vertexNumber && !neighbours.contains(index) }
+                    .unzip
+                    ._2
               ).distinct
 
-            1 + independentSet(dropVertexWithNeighbour(addVertex(matrix, newVertexNeighbours), vertexNumber))
+            1 +
+              independentSet(
+                dropVertexWithNeighbour(
+                  addVertex(
+                    matrix,
+                    newVertexNeighbours
+                  ),
+                  vertexNumber
+                )
+              )
           }
         }.getOrElse {
           indexedMatrix
@@ -108,18 +121,34 @@ object IndependentSet {
   }
 
   def main(args: Array[String]): Unit = {
-    val matrix =
-      io.Source.fromFile("data/g80.in")
-        .getLines()
-        .drop(1)
-        .map(
-          _.split(" ")
-          .map(_.toInt)
+    List(
+//      "data/g4.in",
+      "data/g30.in",
+      "data/g40.in",
+      "data/g50.in",
+      "data/g60.in",
+      "data/g70.in",
+      "data/g80.in",
+      "data/g90.in",
+      "data/g100.in",
+      "data/g110.in",
+      "data/g120.in",
+      "data/g130.in"
+    ).foreach { fileName =>
+      val matrix =
+        io.Source.fromFile(fileName)
+          .getLines()
+          .drop(1)
+          .map(
+            _.split(" ")
+            .map(_.toInt)
+            .toList
+          )
           .toList
-        )
-        .toList
 
-    val startTime = System.currentTimeMillis
-    println(s"Independent set: ${independentSet(matrix)}. Running time: ${System.currentTimeMillis - startTime}ms.")
+      val startTime = System.currentTimeMillis
+      recursiveCalls = 0
+      println(s"Filename: $fileName. Independent set: ${independentSet(matrix)}. Running time: ${System.currentTimeMillis - startTime}ms. Recursive calls: $recursiveCalls.")
+    }
   }
 }
